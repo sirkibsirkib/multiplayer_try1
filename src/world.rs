@@ -12,7 +12,7 @@ pub struct Point {
 }
 
 impl Point {
-    pub const NULL: Point = Point{x:0.0, y:0.0};
+    // pub const NULL: Point = Point{x:0.0, y:0.0};
 }
 
 #[derive(Debug)]

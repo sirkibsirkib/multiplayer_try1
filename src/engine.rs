@@ -11,7 +11,7 @@ const WIDTH : f64 = 500.0;
 const HEIGHT : f64 = 400.0;
 
 use network::RemoteInformant;
-use network::Diff;
+// use network::Diff;
 
 //contains the game's data elements. represents the LOCAL copy
 
@@ -48,7 +48,7 @@ pub fn game_loop<RI : RemoteInformant>(mut ri : RI, player_id : u64) {
             }
         }
 
-        if let Some(ud) = e.update_args() {
+        if let Some(_) = e.update_args() {
             let out_from_world = w.exchange_diffs(ri.drain());
             ri.update_all(out_from_world);
         }

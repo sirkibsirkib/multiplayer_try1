@@ -1,5 +1,5 @@
 
-use std::sync::{Arc, Mutex, Condvar};
+use std::sync::{Arc};
 use std::thread;
 
 #[macro_use]
@@ -12,10 +12,10 @@ mod world;
 use network::{MsgQueue, MsgQueueStruct};
 
 fn main() {
-    let mut incoming : MsgQueue = Arc::new(MsgQueueStruct::new());
-    let mut outgoing : MsgQueue = Arc::new(MsgQueueStruct::new());
-    let mut incoming_clone = incoming.clone();
-    let mut outgoing_clone = outgoing.clone();
+    let incoming : MsgQueue = Arc::new(MsgQueueStruct::new());
+    let outgoing : MsgQueue = Arc::new(MsgQueueStruct::new());
+    let incoming_clone = incoming.clone();
+    let outgoing_clone = outgoing.clone();
 
     let args : Vec<_> = std::env::args().collect();
     if args.len() == 2 {
@@ -27,7 +27,7 @@ fn main() {
     } else if args.len() == 3 {
         let ri = network::ClientsideInformant::new(incoming, outgoing);
         thread::spawn(move || {
-            network::client_connect(&args[1], &args[2], incoming_clone, outgoing_clone);
+            network::client_entrypoint(&args[1], &args[2], incoming_clone, outgoing_clone);
         });
         engine::game_loop(ri, 2);
     } else {
