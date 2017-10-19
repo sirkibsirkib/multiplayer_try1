@@ -1,88 +1,39 @@
-use std::io::Write;
-use std::net::TcpListener;
-use std::net::TcpStream;
-use std::thread;
-use std::io::prelude::*;
 
+use std::sync::{Arc, Mutex, Condvar};
+use std::thread;
+
+
+
+
+#[macro_use]
+extern crate serde_derive;
+
+mod engine;
+mod network;
+
+use network::{MsgQueue, MsgQueueStruct};
 
 
 fn main() {
+    let mut incoming : MsgQueue = Arc::new(MsgQueueStruct::new());
+    let mut outgoing : MsgQueue = Arc::new(MsgQueueStruct::new());
+    let mut incoming_clone = incoming.clone();
+    let mut outgoing_clone = outgoing.clone();
+
     let args : Vec<_> = std::env::args().collect();
-    if args.len() > 1 && args[1] == "server" {
-        println!("SERVER");
-        server_loop();
-    } else {
-        match TcpStream::connect("127.0.0.1:8080") {
-            Ok(stream) => {
-                // stream.set_nonblocking(true).is_ok();
-                let second = std::time::Duration::from_millis(1000);
-                stream.set_read_timeout(None).is_ok();
-                communicate(stream);
-            },
-            Err(_) => {
-                println!("No response.");
-            }
-        }
-    }
-}
-
-
-fn server_loop() {
-    let host = "127.0.0.1";
-    let port = 8080;
-    let second = std::time::Duration::from_millis(1000);
-
-    let listener = TcpListener::bind(format!("{}:{}", host, port)).unwrap();
-    println!("listening started, ready to accept");
-    for stream in listener.incoming() {
+    if args.len() == 2 {
+        let ri = network::ClientsideInformant::new(incoming, outgoing);
         thread::spawn(move || {
-            let stream = stream.unwrap();
-            // stream.set_nonblocking(true).is_ok();
-            stream.set_read_timeout(None).is_ok();
-            communicate(stream);
+            network::server_entrypoint(&args[1], incoming_clone, outgoing_clone);
         });
-    }
-}
-
-fn communicate(mut stream : TcpStream) {
-
-    let clone = stream.try_clone().unwrap();
-    thread::spawn(move || {
-        communicate_out(clone);
-    });
-
-
-
-    let mut buf = [0; 100];
-    let second = std::time::Duration::from_millis(1000);
-    loop {
-        // stream.write("Hello".as_bytes()).is_ok();
-
-        // thread::sleep(second);
-        // println!("??");
-        match stream.read(&mut buf) {
-            Ok(bytes) => println!("read {:?} ie `{}`", bytes, std::str::from_utf8(&buf[..bytes]).unwrap()),
-            Err(msg) => match msg.kind() {
-                std::io::ErrorKind::ConnectionReset => {println!("Connection reset!"); return;},
-                x => println!("unexpected kind `{:?}`", x),
-            },
-        }
-    }
-}
-use std::io::{stdin,stdout};
-
-fn communicate_out(mut stream : TcpStream) {
-    println!("Waiting for user input lines:");
-    let mut s;
-    loop {
-        s = String::new();
-        let _ = stdout().flush();
-        stdin().read_line(&mut s).expect("Did not enter a correct string");
-        s.trim();
-        println!("WRITING");
-        match stream.write(s.as_bytes()) {
-            Err(msg) => if msg.kind() == std::io::ErrorKind::ConnectionReset {return;},
-            _ => (),
-        }
+        engine::game_loop(ri, 1);
+    } else if args.len() == 3 {
+        let ri = network::ClientsideInformant::new(incoming, outgoing);
+        thread::spawn(move || {
+            network::client_connect(&args[1], &args[2], incoming_clone, outgoing_clone);
+        });
+        engine::game_loop(ri, 2);
+    } else {
+        println!("Client mode [host] [port]\nServer mode [port]");
     }
 }
