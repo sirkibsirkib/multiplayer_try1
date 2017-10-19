@@ -153,7 +153,8 @@ fn listen_for_new_clients(port : &str, streams : Arc<Mutex<Vec<TaggedStream>>>, 
 }
 
 fn serve(tagged_streams : Arc<Mutex<Vec<TaggedStream>>>, outgoing : MsgQueue, bounced_diffs : Arc<Mutex<Vec<(Diff, u32)>>>) {
-
+    //TODO bounce client diffs immediately in different method
+    //TODO sleep on conditions for incoming and outgoing
     println!("Server serving outgoing");
     let mut todo : Vec<(String, u32)> = Vec::new();
     loop {
