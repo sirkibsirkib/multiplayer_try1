@@ -2,17 +2,14 @@
 use std::sync::{Arc, Mutex, Condvar};
 use std::thread;
 
-
-
-
 #[macro_use]
 extern crate serde_derive;
 
 mod engine;
 mod network;
+mod world;
 
 use network::{MsgQueue, MsgQueueStruct};
-
 
 fn main() {
     let mut incoming : MsgQueue = Arc::new(MsgQueueStruct::new());

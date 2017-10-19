@@ -8,14 +8,14 @@ use std::thread;
 use std::io::prelude::*;
 use std::sync::{Arc, Mutex, Condvar};
 
-use engine::Point;
+use world::Point;
 
 extern crate serde;
 extern crate serde_json;
 
 
 
-use engine::EntityID;
+use world::EntityID;
 
 //represents a difference between the LOCAL and REMOTE
 #[derive(Serialize, Deserialize, Copy, Clone, Debug)]
@@ -25,6 +25,7 @@ pub enum Diff {
 }
 
 pub trait RemoteInformant {
+    fn update_all(&mut self, diffs : Vec<Diff>);
     fn update(&mut self, diff : Diff);
     fn drain(&mut self) -> Vec<Diff>;
 }
@@ -56,6 +57,13 @@ impl ClientsideInformant {
     }
 }
 impl RemoteInformant for ClientsideInformant {
+    fn update_all(&mut self, diffs : Vec<Diff>) {
+        let mut x = self.outgoing.v.lock().unwrap();
+        for diff in diffs {
+            x.push(diff);
+        }
+        self.outgoing.c.notify_all();
+    }
     fn update(&mut self, diff : Diff) {
         let mut x = self.outgoing.v.lock().unwrap();
         x.push(diff);
@@ -104,6 +112,7 @@ pub fn client_connect(host : &str, port : &str, incoming : MsgQueue, outgoing : 
         },
         Err(_) => {
             println!("No response.");
+            panic!();
         }
     }
 }
@@ -186,6 +195,7 @@ fn serve(tagged_streams : Arc<Mutex<Vec<TaggedStream>>>, outgoing : MsgQueue, bo
                 for t in todo.drain(..) {
                     if t.1 != t_stream.tag {
                         t_stream.stream.write(&t.0.as_bytes()).is_ok();
+                        //TODO might not be OK. handle disconnection
                     }
                 }
             }
@@ -197,6 +207,7 @@ fn serve(tagged_streams : Arc<Mutex<Vec<TaggedStream>>>, outgoing : MsgQueue, bo
 fn communicate_in(mut tagged_stream : TaggedStream, incoming : MsgQueue, maybe_diffs : Option<Arc<Mutex<Vec<(Diff, u32)>>>>) {
     let mut buf = [0; 256];
     loop {
+        //blocks until something is there
         match tagged_stream.stream.read(&mut buf) {
             Ok(bytes) => {
                 let d : Diff = parse_diff(std::str::from_utf8(&buf[..bytes]).unwrap());
