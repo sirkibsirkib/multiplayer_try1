@@ -1,17 +1,14 @@
 # multiplayer_try1
 
-As part of my never-ending attempts to create this fuzzy game idea of Emergence,
-this is the first time I am really hitting it bottom-up with multiplayer in mind specifically.
+## Concept
 
-This project will attempt to create a very minimal but robust multiplayer game engine.
-At time of writing, the following is in place:
+This was a first attempt at a generic network-based game engine. Instead of focusing on the graphics and game logic (which would lean heavily on rs Piston), this project concentrates on a robust server & multi-client model that gives the illusion of a local game to all participants. Under the hood, messages are being created, sent and interpreted to update the game state. 
 
-1. Enities are indirectly referenced via an "Entity ID". This allows for an easy means of serializing messages that can be understood accross the network
-1. "Remote Informant" actor that is called once per update() tick. This actor checks for "Diffs" (changes in the game state) locally and remotely and generates Diff messages to send and receive appropriately
-1. Opaque interface between world / game logic and the rest of the network engine. This creates a conceptual bottleneck for the Remote Informant to monitor
-1. Contention points are protected by condition variables to avoid "busy waiting"
-1. Support for the game to be playable for server AND clients. Additional mode for single-player where engine remains the same but has a stub Remote Informant that generates no Diffs.
 
-The following features are envisioned in the near future:
 
-1. "Meta Message" system for managing synchronization. For instance, upon receiving a Diff representing a manipulation of the game state referring to an unknown Entity ID, the engine can ask the remote informant to push a Query into the network. After a time, the response will come back asynchronously and provide the necessary information
+## Discontinuation
+
+This approach was ultimately shelved for now as a more assymetric approach would make more sense for the game I have in mind at time of writing: `Emergence`.
+
+The next project will reuse several concepts from this project, but redesign the arrangement of components to be even more generic, this time leaning more heavily on serverside game logic along with a new client-side module specifically for compacting granular player actions into coarse updates to send to the server. Additionally, a more intuitive system will exist to support client-side actions that can be performed without server interaction.
+
